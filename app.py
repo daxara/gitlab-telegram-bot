@@ -5,6 +5,7 @@ from flask import Flask
 from flask import request
 from flask import jsonify
 from bot import Bot
+from daemonize import Daemonize
 app = Flask(__name__)
 
 class GitlabBot(Bot):
@@ -82,10 +83,10 @@ def generatePushMsg(data):
     msg = '*{0} ({1}) - {2} new commits*\n'\
         .format(data['project']['name'], data['project']['default_branch'], data['total_commits_count'])
     for commit in data['commits']:
-        msg = msg + '----------------------------------------------------------------\n'
+        msg = msg + '------------------------------------------------------------\n'
         msg = msg + commit['message'].rstrip()
         msg = msg + '\n' + commit['url'].replace("_", "\_") + '\n'
-    msg = msg + '----------------------------------------------------------------\n'
+    msg = msg + '------------------------------------------------------------\n'
     return msg
 
 
@@ -120,17 +121,28 @@ def generateMergeRequestMsg(data):
 
 
 def generateWikiMsg(data):
-    return 'new wiki stuff'
+    return 'new wiki edit'
 
 
 def generatePipelineMsg(data):
-    return 'new pipeline stuff'
+    msg = '------------------------------------------------------------\n'
+    if data['object_attributes']['status'] == 'running':
+        msg = msg + '{2} pipeline #{0} (by {1})\n'.format(data['object_attributes']['id'], data['user']['username'], data['object_attributes']['status'])
+    else:
+        msg = msg + '*pipeline #{0} (by {1}) {2}*\n'.format(data['object_attributes']['id'], data['user']['username'], data['object_attributes']['status'])
+    msg = msg + '------------------------------------------------------------\n'
+    return msg
 
 
 def generateBuildMsg(data):
-    return 'new build stuff'
+    msg = '------------------------------------------------------------\n'
+    msg = msg + 'build #'+str(data['build_id'])+' commit #'+str(data['commit']['id'])+' '+str(data['build_status'])+'\n'
+    msg = msg + '------------------------------------------------------------\n'
+    return msg
 
-
-if __name__ == "__main__":
+def main():
     b.run_threaded()
     app.run(host='0.0.0.0', port=10111)
+
+daemon = Daemonize(app="gitlab_bot", pid='/srv/home/paleontica/gitlab-telegram-bot/pid.pid', action=main)
+daemon.start()
