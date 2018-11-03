@@ -141,8 +141,12 @@ def generateBuildMsg(data):
     return msg
 
 def main():
+    try:
+        portnumber = open('portnumber').read().strip()
+    except:
+        raise Exception("The portnumber file is invalid")
     b.run_threaded()
-    app.run(host='0.0.0.0', port=10111)
+    app.run(host='0.0.0.0', port=portnumber)
 
 daemon = Daemonize(app="gitlab_bot", pid='/srv/home/paleontica/gitlab-telegram-bot/pid.pid', action=main)
 daemon.start()
